@@ -1,0 +1,34 @@
+{
+    "folders": [
+        {
+            "path": ".",
+            "name": "Root"
+        },
+        {
+            "path": "./client",
+            "name": "Client"
+        },
+        {
+            "uri": "RestFS:/",
+            "name": "QM Files"
+        },
+
+    ],
+    "settings": {
+        "MVBasic.RestPath": "http://localhost:8080/restfs",
+        "MVBasic.UseGateway": true,
+        "MVBasic.GatewayType": "QM",
+        "MVBasic.Account": "QMDEV",
+        "MVBasic.RestFS.AutoConnect": true,
+        "MVBasic.RestFS.RestAPI":1,
+        "files.associations": {
+            "*.html": "html",
+            "*.js": "javascript",
+            "*.json": "json",
+            "*.md": "markdown",
+            "*.py": "python",
+            "*.txt": "text",
+            "*": "mvbasic"
+          }
+    }
+} 
