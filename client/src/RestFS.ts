@@ -104,11 +104,13 @@ export class RestFS implements IRestFS {
     private init_auth_resolve: () => void;
     private init_auth_reject: () => void;
 
+    private diagnosticCollection: vscode.DiagnosticCollection;
+
     constructor(apiVersion: number = 0) {
         this.ApiVersion = apiVersion;
     }
 
-    initRestFS(restPath: string, restAccount: string, options: any = {}) {
+    initRestFS(restPath: string, restAccount: string, options: any = {}, diagnosticCollection: vscode.DiagnosticCollection) {
         this.entries = new Map<string, Entry>();
         this.RestPath = restPath.replace(/\/$/, ''); // strip trailing slash if there is one
         this.RestAccount = restAccount;
@@ -135,7 +137,7 @@ export class RestFS implements IRestFS {
         switch ((options && options.log_level) || 'off') {
             case 'messages': this.log_level = 1; break;
             case 'verbose': this.log_level = 2; break;
-            default: this.log_level = 0;
+            default: this.log_level = 2;
         }
         // create array of excluded file globs
         this.excludes = new Array<any>();
@@ -154,6 +156,9 @@ export class RestFS implements IRestFS {
                 }
             }
         }
+
+        this.diagnosticCollection = diagnosticCollection;
+
         this.initialized = true;
         this.log_level && getTraceChannel().appendLine("[RestFS] initialized: path=" + this.RestPath + " account=" + this.RestAccount);
     }
@@ -745,6 +750,20 @@ export class RestFS implements IRestFS {
         await this._command(command, uri, options)
     }
 
+    public reportErrors(uri: vscode.Uri, errors: { line: number, message: string }[]) {
+        const diagnostics: vscode.Diagnostic[] = errors.map(error => {
+            const range = new vscode.Range(error.line - 1, 0, error.line - 1, 100); // adjust range as needed
+            return new vscode.Diagnostic(
+                range,
+                error.message,
+                vscode.DiagnosticSeverity.Error
+            );
+        });
+
+        // Add to collection
+        this.diagnosticCollection.set(uri, diagnostics);
+    }
+
     async _command(command: string, uri?: vscode.Uri, options?: any): Promise<void> {
         let res: any;
         if (this.ApiVersion > 0) {
@@ -784,13 +803,14 @@ export class RestFS implements IRestFS {
             if (results.output && results.output instanceof Array) {
                 const that = this;
                 let message: string;
+                let errors: { line: any; message: string; }[] = []
                 getRestFSChannel().show();
                 results.output.forEach(function (element: any) {
                     if (element instanceof Array) {
                         // [message, line, column]
                         message = element[0];
                         if (element.length > 1)
-                            message += ": " + uri.path + ":" + element[1];
+                            message += ": " + uri.toString() + ":" + element[1];
                         if (element.length > 2)
                             message += ":" + element[2];
                     } else {
@@ -798,7 +818,11 @@ export class RestFS implements IRestFS {
                     }
                     getRestFSChannel().appendLine(message);
                     that.log_level > 1 && getTraceChannel().appendLine("[RestFS] command result: " + message);
+                    errors.push({ line: element[1], message: message });
                 });
+                that.reportErrors(uri, errors);
+            } else {
+                this.diagnosticCollection.delete(uri);
             }
         } else {
             // Original API

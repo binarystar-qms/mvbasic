@@ -42,6 +42,21 @@ var RestSelAttr: number;
 var RestCaseSensitive: boolean;
 var logLevel: string;
 
+// Create a diagnostic collection
+const diagnosticCollection = vscode.languages.createDiagnosticCollection('MVBasic');
+
+function reportError(uri: vscode.Uri, line: number, message: string) {
+    const range = new vscode.Range(line - 1, 0, line - 1, 100); // adjust range as needed
+    const diagnostic = new vscode.Diagnostic(
+        range,
+        message,
+        vscode.DiagnosticSeverity.Error
+    );
+    
+    // Add to collection
+    diagnosticCollection.set(uri, [diagnostic]);
+}
+
 export function activate(context: vscode.ExtensionContext) {
 
 	// Load config straight away
@@ -153,7 +168,7 @@ export function activate(context: vscode.ExtensionContext) {
 		const connectRestFS = async function (): Promise<boolean> {
 
 			try {
-				RESTFS.initRestFS(RestPath, Account, { case_insensitive: !RestCaseSensitive, max_items: RestMaxItems, sel_attr: RestSelAttr, log_level: logLevel });
+				RESTFS.initRestFS(RestPath, Account, { case_insensitive: !RestCaseSensitive, max_items: RestMaxItems, sel_attr: RestSelAttr, log_level: logLevel }, diagnosticCollection);
 
 				// send credentials (some of these are specific to the gateway)
 				const login = {
@@ -214,46 +229,51 @@ export function activate(context: vscode.ExtensionContext) {
 		});
 	}
 
-	let mvonAdmin = vscode.commands.registerCommand('extension.mvonAdmin', async () => {
 
-		// Create and show a new webview
+	// Register the MYRA Dashboard command
+	let myraDashboard = vscode.commands.registerCommand('extension.myraDashboard', async () => {
+		// Create and show a new webview panel
 		const panel = vscode.window.createWebviewPanel(
-			'MVON# Administration', // Identifies the type of the webview. Used internally
-			'MVON# Administrator', // Title of the panel displayed to the user
-			vscode.ViewColumn.One, // Editor column to show the new webview panel in.
+			'myraDashboard', // Internal type identifier
+			'MYRA Dashboard', // Title shown to user
+			vscode.ViewColumn.One, // Display column
 			{
 				enableScripts: true,
 				retainContextWhenHidden: true,
 				enableCommandUris: true,
-
-				// And restric the webview to only loading content from our extension's `media` directory.
-
-				localResourceRoots: [
-
-					vscode.Uri.file(path.join(__dirname, '/../../administrator/')).with({ scheme: 'vscode-resource' })
-				]
-			} // Webview options. More on these later.
-
-		);
-		var filePath = __dirname;
-		filePath = filePath + "/../../administrator/index.html";
-		var admin = fs.readFileSync(filePath, "utf8");
-		// set the RestPath for all calls
-		if (!RestPath.startsWith("http://localhost/mvonrest")) {
-			while (admin.indexOf("http://localhost/mvonrest") > -1) {
-				admin = admin.replace("http://localhost/mvonrest", RestPath)
+				enableFindWidget: true
 			}
-		}
-		panel.webview.html = admin;
+		);
 
+		// Load your MYRA Dashboard URL
+		panel.webview.html = `<!DOCTYPE html>
+			<html lang="en">
+			<head>
+				<meta charset="UTF-8">
+				<meta name="viewport" content="width=device-width, initial-scale=1.0">
+				<title>MYRA Dashboard</title>
+				<style>
+					body, html, iframe {
+						margin: 0;
+						padding: 0;
+						width: 100%;
+						height: 100%;
+						border: none;
+						overflow: hidden;
+					}
+				</style>
+			</head>
+			<body>
+				<iframe src="http://localhost:3000" width="100%" height="100%"></iframe>
+			</body>
+			</html>`;
 	});
-
 
 	// Push the disposable to the context's subscriptions so that the
 	// client can be deactivated on extension deactivation
-	context.subscriptions.push(mvonAdmin);
 	context.subscriptions.push(disposable);
 	context.subscriptions.push(initialiseRestFS);
+	context.subscriptions.push(myraDashboard);
 
 	if (UsingRest) {
 		let compile = vscode.commands.registerCommand('extension.compileProgram', async () => {
@@ -517,6 +537,8 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
+	diagnosticCollection.dispose();
+
 	if (RESTFS) {
 		await RESTFS.logout();
 	}

@@ -76,6 +76,10 @@
                 {
                     "when": "resourceLangId == mvbasic",
                     "command": "extension.catalogProgram"
+                },
+                {
+                    "when": "resourceLangId == mvbasic",
+                    "command": "extension.myraDashboard"
                 }
             ]
         },
@@ -97,8 +101,8 @@
                 "title": "MVBasic: Catalog Basic Program"
             },
             {
-                "command": "extension.mvonAdmin",
-                "title": "MVBasic: MVON# Administrator"
+                "command": "extension.myraDashboard",
+                "title": "MYRA: Dashboard"
             }
         ],
         "grammars": [
@@ -347,7 +351,8 @@
         "onCommand:extension.catalogProgram",
         "onCommand:extension.CompileDebug",
         "onFileSystem:RestFS",
-        "onCommand:extension.initialiseRestFS"
+        "onCommand:extension.initialiseRestFS",
+        "onCommand:extension.myraDashboard"
     ],
     "main": "./client/out/extension",
     "scripts": {

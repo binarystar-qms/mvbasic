@@ -35,7 +35,7 @@ export interface IRestFS extends vscode.FileSystemProvider {
     ApiVersion: number;
     MaxItems: number;
     SelAttr: number;
-    initRestFS(restPath: string, restAccount: string, options: any): void;
+    initRestFS(restPath: string, restAccount: string, options: any, diagnosticCollection: vscode.DiagnosticCollection): void;
     stat(uri: vscode.Uri): vscode.FileStat | Promise<vscode.FileStat>;
     readDirectory(uri: vscode.Uri): [string, vscode.FileType][] | Promise<[string, vscode.FileType][]>;
     readFile(uri: vscode.Uri): Uint8Array | Promise<Uint8Array>;
