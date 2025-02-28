@@ -15,7 +15,7 @@
 
     ],
     "settings": {
-        "MVBasic.RestPath": "http://localhost:8080/restfs",
+        "MVBasic.RestPath": "http://localhost:9090/restfs",
         "MVBasic.UseGateway": true,
         "MVBasic.GatewayType": "QM",
         "MVBasic.Account": "QMDEV",
